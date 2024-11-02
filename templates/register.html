@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スケジュール登録</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        input {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>スケジュール登録</h1>
+    <form method="POST">
+        <input type="text" name="title" placeholder="タイトル" required>
+        <input type="datetime-local" name="scheduled_time" required>
+        <button type="submit">登録</button>
+    </form>
+    <a href="/"><button>戻る</button></a>
+</body>
+</html>
