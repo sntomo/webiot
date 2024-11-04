@@ -28,77 +28,74 @@
     
     <div class="next-task">
         <h2>次の予定</h2>
-        {% if next_task %}
-            <p>タイトル: {{ next_task[0] }}</p>
-            <p>予定日時: {{ next_task[1] }}</p>
-        {% else %}
-            <p>次の予定はありません。</p>
-        {% endif %}
+        <p id="next-task-title">次のタスクがありません。</p>
+        <p id="next-task-time"></p>
     </div>
 
-<div class="current-time">
+    <div class="current-time">
         <h2>現在の日時</h2>
-        <p id="current-time">{{ current_time }}</p>
+        <p id="current-time"></p>
     </div>
 
 <!-- 音声要素の追加 -->
     <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
 
-    <script>
-        setInterval(() => {
-            fetch('/next_task')
-                .then(response => response.json())
-                .then(data => {
-                    const now = new Date();
-                    const taskTime = new Date(data.scheduled_time);
-
-		    console.log(data.title);
-console.log(taskTime.getTime());
-console.log(now.getTime());
-console.log(now.getSeconds() );
-
-                    if (data.title && taskTime.getTime() >= now.getTime() && now.getSeconds() < 60) {
-                        // アラーム音を再生
-                        document.getElementById('alarm-sound').play();
-                        alert(`アラート: ${data.title} の時間です！`);
-                    }
-                });
-        }, 60000);  // 60秒ごとにチェック
-    </script>
-
 <script>
-        // 1秒ごとに現在時刻を更新する関数
-        function updateCurrentTime() {
-            const now = new Date();
-            const formattedTime = now.toLocaleString('ja-JP', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+    let nextTaskTime = null;
+
+    // サーバーから次のタスクを取得し、ページに表示する関数
+    function fetchNextTask() {
+        fetch('/next_task')
+            .then(response => response.json())
+            .then(data => {
+                if (data.title && data.scheduled_time) {
+                    document.getElementById('next-task-title').textContent = `タイトル: ${data.title}`;
+                    document.getElementById('next-task-time').textContent = `予定日時: ${data.scheduled_time}`;
+                    nextTaskTime = new Date(data.scheduled_time);  // 新しいタスク時刻を設定
+                } else {
+                    document.getElementById('next-task-title').textContent = "次のタスクがありません。";
+                    document.getElementById('next-task-time').textContent = "";
+                    nextTaskTime = null;
+                }
             });
-            document.getElementById('current-time').textContent = formattedTime;
+    }
+
+    // 現在時刻を毎秒更新
+    function updateCurrentTime() {
+        const now = new Date();
+        const formattedTime = now.toLocaleString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('current-time').textContent = formattedTime;
+
+        // タスク時間と比較してアラームを鳴らす
+        if (nextTaskTime) {
+            const nowFormatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            const taskFormatted = `${nextTaskTime.getFullYear()}-${String(nextTaskTime.getMonth() + 1).padStart(2, '0')}-${String(nextTaskTime.getDate()).padStart(2, '0')}T${String(nextTaskTime.getHours()).padStart(2, '0')}:${String(nextTaskTime.getMinutes()).padStart(2, '0')}`;
+
+            if (nowFormatted === taskFormatted) {
+                document.getElementById('alarm-sound').play();
+                alert(`アラート: ${document.getElementById('next-task-title').textContent} の時間です！`);
+                
+                // アラームが鳴った後、次のタスクを再取得し、nextTaskTimeをリセット
+                nextTaskTime = null;  // アラームを再度鳴らさないようにリセット
+                fetchNextTask();
+            }
         }
+    }
 
-        // 1秒ごとに updateCurrentTime を呼び出す
-        setInterval(updateCurrentTime, 1000);
+    // ページ読み込み時に次のタスクを取得
+    window.onload = () => {
+        fetchNextTask();
+        setInterval(updateCurrentTime, 1000);  // 1秒ごとに現在時刻を更新
+    };
+</script>
 
-        // タスクのチェックを60秒ごとに実行
-        setInterval(() => {
-            fetch('/next_task')
-                .then(response => response.json())
-                .then(data => {
-                    const now = new Date();
-                    const taskTime = new Date(data.scheduled_time);
-
-                    if (data.title && taskTime.getTime() <= now.getTime() && now.getSeconds() < 60) {
-                        // アラーム音を再生
-                        document.getElementById('alarm-sound').play();
-                        alert(`アラート: ${data.title} の時間です！`);
-                    }
-                });
-        }, 60000);
-    </script>
 </body>
 </html>
