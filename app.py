@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
+import requests
 import schedule
 import time
 import threading
@@ -71,6 +72,17 @@ def mark_task_as_completed(task_id):
     c.execute('UPDATE tasks SET is_completed = 1 WHERE id = ?', (task_id,))
     conn.commit()
     conn.close()
+
+    url = "https://notify-api.line.me/api/notify"
+    token = 'YB0NW8ggdR205dV2OskRGHRQBM36CoU8qqy7GPFFvPP'
+    headers = {'Authorization': 'Bearer ' + token}
+ 
+    message = 'タスクが完了しました'
+    payload = {'message': message}
+ 
+    r = requests.post(url, headers=headers, params=payload,)
+    if r.status_code != 200:
+        print("error : %d" % (r.status_code))
 
 
 @app.route('/start_task', methods=['POST'])
