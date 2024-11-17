@@ -23,16 +23,22 @@
 </head>
 <body>
     <h1>計測システム</h1>
-    <button onclick="alert('計測開始!')">計測開始</button>
+    <button onclick="startTask()">計測開始</button>
     <a href="/register"><button>スケジュール登録</button></a>
-    
-    <div class="next-task">
-        <h2>次の予定</h2>
-        <p id="next-task-title">次のタスクがありません。</p>
-        <p id="next-task-time"></p>
-    </div>
 
-    <div class="current-time">
+<div class="current-task">
+    <h2>現在のタスク</h2>
+    <p id="current-task-title">現在のタスクはありません。</p>
+    <p id="current-task-time"></p>
+</div>
+
+<div class="next-task">
+    <h2>次の予定</h2>
+    <p id="next-task-title">次のタスクがありません。</p>
+    <p id="next-task-time"></p>
+</div>
+
+<div class="current-time">
         <h2>現在の日時</h2>
         <p id="current-time"></p>
     </div>
@@ -42,58 +48,138 @@
 
 <script>
     let nextTaskTime = null;
+    let nextTaskId = null;
+    let currentTask = null;
+    let currentEndTime = null;
+    let currentTaskId = null;
 
-    // サーバーから次のタスクを取得し、ページに表示する関数
-    function fetchNextTask() {
-        fetch('/next_task')
+function startTask() {
+    if (!nextTaskTime) {
+        alert("次のタスクがありません。");
+        return;
+    }
+    
+    fetch('/start_task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: currentTaskId })  // タスクのIDを送信
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert(`実際の開始日時が登録されました: ${data.actual_start_time}`);
+            document.getElementById('current-task-time').textContent += ` | 実際の開始時刻: ${data.actual_start_time}`;
+        } else {
+            alert("開始日時の登録に失敗しました。");
+        }
+    })
+    .catch(error => console.error("Error starting task:", error));
+}
+
+    function updateCurrentTime() {
+    const now = new Date();
+    const formattedTime = now.toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    document.getElementById('current-time').textContent = formattedTime;
+
+    // 現在のタスクが終了しているかどうかを確認
+    if (currentTask && currentEndTime && now >= currentEndTime) {
+if(currentTaskId) {
+        // タスクが終了したら終了フラグをAPIで更新
+        fetch('/mark_task_as_completed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ task_id: currentTaskId })
+        })
+        .then(response => response.json())
+        .then(data => {
+	    console.log(data.status);
+            if (data.status === "success") {
+                // UIの更新：現在のタスクが終了した場合、タスクを非表示にする
+                document.getElementById('current-task-title').textContent = "現在のタスクはありません。";
+                document.getElementById('current-task-time').textContent = "";
+		currentTask = null;
+		currentTaskId = null;
+		currentEndTime = null;
+            }
+        })
+        .catch(error => console.error("Error marking task as completed:", error));
+}
+        // 次のタスクを表示
+        fetchNextTask();
+        currentTask = null;  // 現在のタスクをリセット
+    }
+
+    // 現在のタスクを表示
+    if (currentTask && !currentEndTime) {
+        fetch('/update_current_task')
             .then(response => response.json())
             .then(data => {
-                if (data.title && data.scheduled_time) {
-                    document.getElementById('next-task-title').textContent = `タイトル: ${data.title}`;
-                    document.getElementById('next-task-time').textContent = `予定日時: ${data.scheduled_time}`;
-                    nextTaskTime = new Date(data.scheduled_time);  // 新しいタスク時刻を設定
-                } else {
-                    document.getElementById('next-task-title').textContent = "次のタスクがありません。";
-                    document.getElementById('next-task-time').textContent = "";
-                    nextTaskTime = null;
+                if (data.title) {
+                    document.getElementById('current-task-title').textContent = `タイトル: ${data.title}`;
+                    document.getElementById('current-task-time').textContent = `開始時刻: ${data.scheduled_time}` +
+                        (data.end_time ? ` - 終了時刻: ${data.end_time}` : '');
+                    currentEndTime = new Date(data.end_time);
+                    currentTaskId = data.id;  // タスクIDを記録
                 }
-            });
+            })
+            .catch(error => console.error("Error fetching current task:", error));
     }
 
-    // 現在時刻を毎秒更新
-    function updateCurrentTime() {
-        const now = new Date();
-        const formattedTime = now.toLocaleString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        document.getElementById('current-time').textContent = formattedTime;
+    // 次のタスクの開始時間が過ぎた場合の処理
+    if (nextTaskTime && now >= nextTaskTime && !currentTask) {
+        // 次のタスクを表示
+        document.getElementById('current-task-title').textContent = `タイトル: ${document.getElementById('next-task-title').textContent}`;
+        document.getElementById('current-task-time').textContent = `開始時刻: ${nextTaskTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` +
+            (currentEndTime ? ` - 終了時刻: ${currentEndTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` : '');
 
-        // タスク時間と比較してアラームを鳴らす
-        if (nextTaskTime) {
-            const nowFormatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        // アラートと音声を鳴らす
+        document.getElementById('alarm-sound').play();
+        alert(`アラート: ${document.getElementById('next-task-title').textContent} の時間です！`);
 
-            const taskFormatted = `${nextTaskTime.getFullYear()}-${String(nextTaskTime.getMonth() + 1).padStart(2, '0')}-${String(nextTaskTime.getDate()).padStart(2, '0')}T${String(nextTaskTime.getHours()).padStart(2, '0')}:${String(nextTaskTime.getMinutes()).padStart(2, '0')}`;
+        currentTask = nextTaskTime;
+	currentTaskId = nextTaskId;
+        currentEndTime = nextEndTime;
+        nextTaskTime = null;
+        fetchNextTask();
+    }
+}
 
-            if (nowFormatted === taskFormatted) {
-                document.getElementById('alarm-sound').play();
-                alert(`アラート: ${document.getElementById('next-task-title').textContent} の時間です！`);
-                
-                // アラームが鳴った後、次のタスクを再取得し、nextTaskTimeをリセット
-                nextTaskTime = null;  // アラームを再度鳴らさないようにリセット
-                fetchNextTask();
+// 次のタスクを取得する処理
+function fetchNextTask() {
+    fetch('/next_task')
+        .then(response => response.json())
+        .then(data => {
+            if (data.title && data.scheduled_time) {
+                // 次のタスクの情報を更新
+                document.getElementById('next-task-title').textContent = `タイトル: ${data.title}`;
+                document.getElementById('next-task-time').textContent = `開始時刻: ${data.scheduled_time}` + 
+                    (data.end_time ? ` - 終了時刻: ${data.end_time}` : '');
+                nextTaskTime = new Date(data.scheduled_time);
+                nextEndTime = data.end_time ? new Date(data.end_time) : null;
+		nextTaskId = data.id;
+            } else {
+                // 次のタスクがない場合
+                document.getElementById('next-task-title').textContent = "次のタスクがありません。";
+                document.getElementById('next-task-time').textContent = "";
+                nextTaskTime = null;
+                nextEndTime = null;
+		nextTaskId = null;
             }
-        }
-    }
+        })
+        .catch(error => console.error("Error fetching next task:", error));
+}
 
-    // ページ読み込み時に次のタスクを取得
+
     window.onload = () => {
         fetchNextTask();
-        setInterval(updateCurrentTime, 1000);  // 1秒ごとに現在時刻を更新
+        setInterval(updateCurrentTime, 1000);
     };
 </script>
 

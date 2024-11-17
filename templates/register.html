@@ -20,12 +20,25 @@
             font-size: 16px;
         }
     </style>
+    <script>
+        function validateForm() {
+            const startTime = document.forms["taskForm"]["scheduled_time"].value;
+            const endTime = document.forms["taskForm"]["end_time"].value;
+            
+            if (startTime >= endTime) {
+                alert("終了時間は開始時刻より後である必要があります。");
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
     <h1>スケジュール登録</h1>
-    <form method="POST">
+    <form name="taskForm" method="POST" onsubmit="return validateForm()">
         <input type="text" name="title" placeholder="タイトル" required>
         <input type="datetime-local" name="scheduled_time" required>
+        <input type="datetime-local" name="end_time" placeholder="終了時間" required>
         <button type="submit">登録</button>
     </form>
     <a href="/"><button>戻る</button></a>
