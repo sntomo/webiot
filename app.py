@@ -76,17 +76,17 @@ def get_todays_task():
     d = date.today()
     todays_task = []
     d_str = d.strftime("%Y-%m-%d")
-    c.execute('SELECT scheduled_time, title, id FROM tasks WHERE scheduled_time LIKE ? ORDER BY scheduled_time ASC ', (d_str+'%',))
-    todays_task_data = [{"time": row[0], "task": row[1], "task_id": row[2]} for row in c.fetchall()]
+    c.execute('SELECT scheduled_time, title, id, is_completed FROM tasks WHERE scheduled_time LIKE ? ORDER BY scheduled_time ASC ', (d_str+'%',))
+    todays_task_data = [{"time": row[0], "task": row[1], "task_id": row[2], "is_completed": row[3]} for row in c.fetchall()]
     conn.close()
     # 時間ごとにタスクをまとめる辞書
     grouped_tasks = defaultdict(list)
     for record in todays_task_data:
         time_obj = datetime.fromisoformat(record["time"])  # ISOフォーマットをdatetimeオブジェクトに変換
         hour_minute = time_obj.strftime("%H:00")  # "HH:MM"形式の文字列に変換
-        grouped_tasks[hour_minute].append({"task": record["task"], "task_id": record["task_id"]})
+        grouped_tasks[hour_minute].append({"task": record["task"], "task_id": record["task_id"], "is_completed": record["is_completed"]})
     # `task_id` を含めてリストを作成
-    todays_task = [{"time": time, "task": [task["task"] for task in tasks], "task_id": [task["task_id"] for task in tasks]} for time, tasks in grouped_tasks.items()]
+    todays_task = [{"time": time, "task": [task["task"] for task in tasks], "task_id": [task["task_id"] for task in tasks], "is_completed": [task["is_completed"] for task in tasks]} for time, tasks in grouped_tasks.items()]
     return todays_task
 
 

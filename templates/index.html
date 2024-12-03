@@ -430,6 +430,8 @@
                 }
                 // 次のタスクを表示
                 fetchNextTask();
+                // 完了状態のマークのため予定を再取得
+                fetchTodaysTask();
                 currentTask = null; // 現在のタスクをリセット
             }
 
@@ -469,6 +471,7 @@
                 currentTaskId = nextTaskId;
                 currentEndTime = nextEndTime;
                 nextTaskTime = null;
+                fetchTodaysTask();
                 fetchNextTask();
             }
         }
@@ -540,14 +543,6 @@
                     console.error('Error:', error);
                 });
 
-
-
-
-
-
-
-
-
             // スケジュールデータを DOM に反映する関数
             function populateSchedule(data) {
                 data.forEach(item => {
@@ -570,6 +565,12 @@
                             checkbox.disabled = 'disabled'
                             checkbox.name = 'task';
                             checkbox.id = task_id;
+
+                            if (item.is_completed[index] == 0) {
+                                checkbox.checked = false;
+                            } else {
+                                checkbox.checked = true;
+                            };
 
                             // ラベル作成
                             const label = document.createElement('label');
