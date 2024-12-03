@@ -1,187 +1,606 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>シンプルなWebページ</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.js"
+        integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc=" crossorigin="anonymous"></script>
+    <title>トップページ</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+        @font-face {
+            font-family: 'digitalism';
+            src: url('../static/digitalism.ttf') format('truetype');
         }
+
+        body {
+            width: 1024px;
+            height: 600px;
+            font-family: Arial, sans-serif;
+            border: solid black 1px;
+        }
+
         button {
             padding: 10px 20px;
             font-size: 16px;
             margin: 10px;
         }
+
+        .current-task {
+            width: 450px;
+            height: 100px;
+            margin: 16px 15px 0 15px;
+        }
+
+        .current-task>h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #eee;
+        }
+
+        .current-task>p {
+            width: calc(100% - 8px);
+            margin: 8px 0 0 8px;
+            font-size: 16px;
+            color: #eee;
+        }
+
         .next-task {
-            margin-top: 20px;
-            font-size: 18px;
+            width: 450px;
+            height: 140px;
+            margin: 8px 15px 0 15px;
+        }
+
+        .next-task>h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #eee;
+        }
+
+        .next-task>p {
+            width: calc(100% - 8px);
+            margin: 8px 0 0 8px;
+            font-size: 16px;
+            color: #eee;
+        }
+
+        .wrapper {
+            width: calc(100% - 16px);
+            height: calc(100% - 16px);
+            display: flex;
+            padding: 8px;
+        }
+
+        .schedule-wrapper {
+            width: calc(50% - 24px);
+            height: calc(100% - 24px);
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 16px 8px 8px 16px;
+        }
+
+        .schedule-wrapper>h2 {
+            margin: 0;
+            color: #f78bbd;
+            font-weight: bold;
+            font-size: 32px;
+        }
+
+        .today {
+            display: inline-block;
+            width: 480px;
+            margin: 0;
+            font-size: 48px;
+            color: #555;
+        }
+
+        input[type="checkbox"] {
+            position: relative;
+            width: 24px;
+            min-width: 24px;
+            height: 24px;
+            border: 2px solid #000;
+            vertical-align: -5px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            margin: 6px 8px;
+        }
+
+        input[type="checkbox"]:checked:before {
+            position: absolute;
+            top: 2px;
+            left: 6px;
+            transform: rotate(50deg);
+            width: 10px;
+            height: 16px;
+            box-sizing: border-box;
+            border-right: 2px solid #000;
+            border-bottom: 2px solid #000;
+            content: '';
+        }
+
+        .schedule {
+            width: 480px;
+            height: 372px;
+            overflow-y: scroll;
+            padding: 4px 0;
+            box-sizing: border-box;
+            border: #000 2px solid;
+        }
+
+        .schedule::-webkit-scrollbar {
+            display: none;
+        }
+
+        .o-clock {
+            display: flex;
+        }
+
+        .o-clock>span {
+            font-size: 32px;
+            font-weight: bold;
+            position: relative;
+            display: inline-block;
+            width: 116px;
+            margin-bottom: 32px;
+            text-align: center;
+            color: #555;
+        }
+
+        .o-clock>span::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            width: 2px;
+            height: calc(100% - 10px);
+            margin: auto;
+            background-color: #f78bbd;
+        }
+
+        .task-box {
+            padding-top: 32px;
+            width: 360px;
+        }
+
+        .task {
+            width: 360px;
+            font-size: 24px;
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .task>label {
+            width: 320px;
+            min-width: 320px;
+            max-width: 320px;
+        }
+
+        a {
+            width: 100%;
+            height: 56px;
+            padding: 0;
+            margin-top: 12px;
+            border-radius: 30px;
+            box-sizing: border-box;
+            border: #f78bbd 4px solid;
+            font-size: 24px;
+        }
+
+        .task-add {
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+            font-size: 32px;
+            color: #555;
+            text-align: left;
+            line-height: 100%;
+            border: none;
+            border-radius: 30px;
+            background-color: #fff;
+            padding: 0 0 0 16px;
+            margin: 0;
+        }
+
+        .detail-wrapper {
+            width: calc(50% - 24px);
+            height: calc(100% - 24px);
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 16px 16px 8px 8px;
+        }
+
+        .detail {
+            width: 480px;
+            height: 320px;
+            background-image: url('../static/img/blackboard.png');
+            background-size: 100% 100%;
+        }
+
+        .character-box {
+            width: 480px;
+            height: 160px;
+            display: flex;
+        }
+
+        #now {
+            letter-spacing: 10px;
+            display: inline-block;
+            width: 480px;
+            height: 80px;
+            margin: 0;
+            font-family: digitalism;
+            font-weight: normal;
+            font-size: 100px;
+            color: #555;
+            text-align: center;
+        }
+
+        .comment {
+            position: relative;
+            display: inline-block;
+            width: 274px;
+            height: 140px;
+            margin: 8px 16px;
+            padding: 0px;
+            border: 2px solid #f78bbd;
+            border-radius: 8px;
+            background-color: #ffd9eb;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #000000;
+        }
+
+        .comment::before {
+            content: "";
+            position: absolute;
+            top: 25%;
+            right: 0;
+            border-style: solid;
+            border-width: 10px 0 10px 20px;
+            border-color: transparent transparent transparent #f78bbd;
+            translate: 100% -50%;
+        }
+
+        .comment::after {
+            content: "";
+            position: absolute;
+            top: 25%;
+            right: 0;
+            border-style: solid;
+            border-width: 7.8px 0 7.8px 15.5px;
+            border-color: transparent transparent transparent #ffd9eb;
+            translate: 100% -50%;
+        }
+
+        .character {
+            width: 170px;
+            height: 160px;
+            background-image: url('../static/img/great.png');
+            background-size: 100% 100%;
         }
     </style>
 </head>
+
 <body>
-    <h1>計測システム</h1>
-    <button onclick="startTask()">計測開始</button>
-    <a href="/register"><button>スケジュール登録</button></a>
 
-<div class="current-task">
-    <h2>現在のタスク</h2>
-    <p id="current-task-title">現在のタスクはありません。</p>
-    <p id="current-task-time"></p>
-</div>
+    <div class="wrapper">
+        <div class="schedule-wrapper">
+            <h1 class="today" id="today"></h1>
+            <h2>やることリスト</h2>
+            <div class="schedule">
+            </div>
+            <a href="/register"><button class="task-add">＋　新規タスクの追加</button></a>
+        </div>
 
-<div class="next-task">
-    <h2>次の予定</h2>
-    <p id="next-task-title">次のタスクがありません。</p>
-    <p id="next-task-time"></p>
-</div>
+        <div class="detail-wrapper">
+            <div class="detail">
+                <div class="current-task">
+                    <h2>現在のタスク</h2>
+                    <p id="current-task-title">現在のタスクはありません。</p>
+                    <p id="current-task-time"></p>
+                </div>
+                <div class="next-task">
+                    <h2>次の予定</h2>
+                    <p id="next-task-title">次のタスクがありません。</p>
+                    <p id="next-task-time"></p>
+                </div>
+            </div>
+            <h1 id="now"></h1>
+            <div class="character-box">
+                <div class="comment">
+                </div>
+                <div class="character"></div>
+            </div>
+        </div>
 
-<div class="current-time">
-        <h2>現在の日時</h2>
-        <p id="current-time"></p>
     </div>
 
-<!-- 音声要素の追加 -->
+    <div class="current-time">
+        <h1 id="current-time"></h1>
+    </div>
+
+
+
+    <h1>計測システム</h1>
+    <button onclick="startTask()">計測開始</button>
+
+
+    <!-- 音声要素の追加 -->
     <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
 
-<script>
-    let nextTaskTime = null;
-    let nextTaskId = null;
-    let currentTask = null;
-    let currentEndTime = null;
-    let currentTaskId = null;
+    <script>
+        let nextTaskTime = null;
+        let nextTaskId = null;
+        let currentTask = null;
+        let currentEndTime = null;
+        let currentTaskId = null;
 
-function startTask() {
-    if (!nextTaskTime) {
-        alert("次のタスクがありません。");
-        return;
-    }
-    
-    fetch('/start_task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_id: currentTaskId })  // タスクのIDを送信
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            alert(`実際の開始日時が登録されました: ${data.actual_start_time}`);
-            document.getElementById('current-task-time').textContent += ` | 実際の開始時刻: ${data.actual_start_time}`;
-        } else {
-            alert("開始日時の登録に失敗しました。");
+        function startTask() {
+            if (!nextTaskTime) {
+                alert("次のタスクがありません。");
+                return;
+            }
+
+            fetch('/start_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        task_id: currentTaskId
+                    }) // タスクのIDを送信
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        alert(`実際の開始日時が登録されました: ${data.actual_start_time}`);
+                        document.getElementById('current-task-time').textContent +=
+                            ` | 実際の開始時刻: ${data.actual_start_time}`;
+                    } else {
+                        alert("開始日時の登録に失敗しました。");
+                    }
+                })
+                .catch(error => console.error("Error starting task:", error));
         }
-    })
-    .catch(error => console.error("Error starting task:", error));
-}
 
-    function updateCurrentTime() {
-    const now = new Date();
-    const formattedTime = now.toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-    document.getElementById('current-time').textContent = formattedTime;
+        function updateCurrentTime() {
+            const now = new Date();
+            const formattedTime = now.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
 
-    // 現在のタスクが終了しているかどうかを確認
-    if (currentTask && currentEndTime && now >= currentEndTime) {
-if(currentTaskId) {
-        // タスクが終了したら終了フラグをAPIで更新
-        fetch('/mark_task_as_completed', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ task_id: currentTaskId })
-        })
-        .then(response => response.json())
-        .then(data => {
-	    console.log(data.status);
-            if (data.status === "success") {
-                // UIの更新：現在のタスクが終了した場合、タスクを非表示にする
-                document.getElementById('current-task-title').textContent = "現在のタスクはありません。";
-                document.getElementById('current-task-time').textContent = "";
-		currentTask = null;
-		currentTaskId = null;
-		currentEndTime = null;
-            }
-        })
-        .catch(error => console.error("Error marking task as completed:", error));
-}
-        // 次のタスクを表示
-        fetchNextTask();
-        currentTask = null;  // 現在のタスクをリセット
-    }
+            document.getElementById('current-time').textContent = formattedTime;
 
-    // 現在のタスクを表示
-    if (currentTask && !currentEndTime) {
-        fetch('/update_current_task')
-            .then(response => response.json())
-            .then(data => {
-                if (data.title) {
-                    document.getElementById('current-task-title').textContent = `タイトル: ${data.title}`;
-                    document.getElementById('current-task-time').textContent = `開始時刻: ${data.scheduled_time}` +
-                        (data.end_time ? ` - 終了時刻: ${data.end_time}` : '');
-                    currentEndTime = new Date(data.end_time);
-                    currentTaskId = data.id;  // タスクIDを記録
+            // 岩部追記 本日の日付（□月□日(□)）を取得して表示する処理
+            const today = now.toLocaleString('ja-JP', {
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+            });
+
+            document.getElementById('today').textContent = today;
+
+            // 岩部追記 現在時刻（時間：分）のみを取得して表示する処理
+            const currentTime = now.toLocaleString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+
+            document.getElementById('now').textContent = currentTime;
+
+
+            // 現在のタスクが終了しているかどうかを確認
+            if (currentTask && currentEndTime && now >= currentEndTime) {
+                if (currentTaskId) {
+                    // タスクが終了したら終了フラグをAPIで更新
+                    fetch('/mark_task_as_completed', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                task_id: currentTaskId
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data.status);
+                            if (data.status === "success") {
+                                // UIの更新：現在のタスクが終了した場合、タスクを非表示にする
+                                document.getElementById('current-task-title').textContent = "現在のタスクはありません。";
+                                document.getElementById('current-task-time').textContent = "";
+                                currentTask = null;
+                                currentTaskId = null;
+                                currentEndTime = null;
+                            }
+                        })
+                        .catch(error => console.error("Error marking task as completed:", error));
                 }
-            })
-            .catch(error => console.error("Error fetching current task:", error));
-    }
-
-    // 次のタスクの開始時間が過ぎた場合の処理
-    if (nextTaskTime && now >= nextTaskTime && !currentTask) {
-        // 次のタスクを表示
-        document.getElementById('current-task-title').textContent = `タイトル: ${document.getElementById('next-task-title').textContent}`;
-        document.getElementById('current-task-time').textContent = `開始時刻: ${nextTaskTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` +
-            (currentEndTime ? ` - 終了時刻: ${currentEndTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` : '');
-
-        // アラートと音声を鳴らす
-        document.getElementById('alarm-sound').play();
-        alert(`アラート: ${document.getElementById('next-task-title').textContent} の時間です！`);
-
-        currentTask = nextTaskTime;
-	currentTaskId = nextTaskId;
-        currentEndTime = nextEndTime;
-        nextTaskTime = null;
-        fetchNextTask();
-    }
-}
-
-// 次のタスクを取得する処理
-function fetchNextTask() {
-    fetch('/next_task')
-        .then(response => response.json())
-        .then(data => {
-            if (data.title && data.scheduled_time) {
-                // 次のタスクの情報を更新
-                document.getElementById('next-task-title').textContent = `タイトル: ${data.title}`;
-                document.getElementById('next-task-time').textContent = `開始時刻: ${data.scheduled_time}` + 
-                    (data.end_time ? ` - 終了時刻: ${data.end_time}` : '');
-                nextTaskTime = new Date(data.scheduled_time);
-                nextEndTime = data.end_time ? new Date(data.end_time) : null;
-		nextTaskId = data.id;
-            } else {
-                // 次のタスクがない場合
-                document.getElementById('next-task-title').textContent = "次のタスクがありません。";
-                document.getElementById('next-task-time').textContent = "";
-                nextTaskTime = null;
-                nextEndTime = null;
-		nextTaskId = null;
+                // 次のタスクを表示
+                fetchNextTask();
+                currentTask = null; // 現在のタスクをリセット
             }
-        })
-        .catch(error => console.error("Error fetching next task:", error));
-}
+
+            // 現在のタスクを表示
+            if (currentTask && !currentEndTime) {
+                fetch('/update_current_task')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.title) {
+                            document.getElementById('current-task-title').textContent = `タイトル: ${data.title}`;
+                            document.getElementById('current-task-time').textContent =
+                                `開始時刻: ${data.scheduled_time}` +
+                                (data.end_time ? ` - 終了時刻: ${data.end_time}` : '');
+                            currentEndTime = new Date(data.end_time);
+                            currentTaskId = data.id; // タスクIDを記録
+                        }
+                    })
+                    .catch(error => console.error("Error fetching current task:", error));
+            }
+
+            // 次のタスクの開始時間が過ぎた場合の処理
+            if (nextTaskTime && now >= nextTaskTime && !currentTask) {
+                // 次のタスクを表示
+                document.getElementById('current-task-title').textContent =
+                    `タイトル: ${document.getElementById('next-task-title').textContent}`;
+                document.getElementById('current-task-time').textContent =
+                    `開始時刻: ${nextTaskTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` +
+                    (currentEndTime ?
+                        ` - 終了時刻: ${currentEndTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` :
+                        '');
+
+                // アラートと音声を鳴らす
+                document.getElementById('alarm-sound').play();
+                alert(`アラート: ${document.getElementById('next-task-title').textContent} の時間です！`);
+
+                currentTask = nextTaskTime;
+                currentTaskId = nextTaskId;
+                currentEndTime = nextEndTime;
+                nextTaskTime = null;
+                fetchNextTask();
+            }
+        }
+
+        // 次のタスクを取得する処理
+        function fetchNextTask() {
+            fetch('/next_task')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.title && data.scheduled_time) {
+                        // 次のタスクの情報を更新
+                        document.getElementById('next-task-title').textContent = `タイトル: ${data.title}`;
+                        document.getElementById('next-task-time').textContent = `開始時刻: ${data.scheduled_time}` +
+                            (data.end_time ? ` - 終了時刻: ${data.end_time}` : '');
+                        nextTaskTime = new Date(data.scheduled_time);
+                        nextEndTime = data.end_time ? new Date(data.end_time) : null;
+                        nextTaskId = data.id;
+                    } else {
+                        // 次のタスクがない場合
+                        document.getElementById('next-task-title').textContent = "次のタスクがありません。";
+                        document.getElementById('next-task-time').textContent = "";
+                        nextTaskTime = null;
+                        nextEndTime = null;
+                        nextTaskId = null;
+                    }
+                })
+                .catch(error => console.error("Error fetching next task:", error));
+        }
 
 
-    window.onload = () => {
-        fetchNextTask();
-        setInterval(updateCurrentTime, 1000);
-    };
-</script>
+        function createScheduleGrid() {
+            // 時間スロットを生成
+            for (i = 0; i < 24; i++) {
+                $('.schedule').append('<div class="o-clock"><span>' + i.toString().padStart(2, '0') + ':00' +
+                    '</span><div class="task-box"></div>')
+            };
+            $('div.o-clock').each(function (index, element) {
+                $(element).attr('id', 'o-clock' + (index).toString().padStart(2, '0'));
+            });
+        };
+
+        function fetchTodaysTask() {
+            // データを取得して反映
+            fetch('/todays_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+
+                .then(data => {
+                    if (data && Array.isArray(data) && data.length > 0) {
+                        data.forEach(item => {
+                            populateSchedule(data);
+                        });
+                    } else {
+                        const commentDiv = document.querySelector('div.comment');
+                        commentDiv.innerHTML = '<p>今日の予定はまだ入力されてないよ！</p><p>計画を立てて内容を入力してね！</p>';
+
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+
+
+
+
+
+
+
+
+            // スケジュールデータを DOM に反映する関数
+            function populateSchedule(data) {
+                data.forEach(item => {
+                    const timeId = `#o-clock${item.time.slice(0, 2)}`; // 例: "13:00" → "#o-clock13"
+                    const taskBox = document.querySelector(`${timeId} .task-box`);
+
+                    if (taskBox) {
+                        // タスクリストをクリア
+                        taskBox.innerHTML = '';
+
+                        // タスクを動的に追加
+                        item.task.forEach((task, index) => {
+                            const taskDiv = document.createElement('div');
+                            const task_id = 'task_id:' + item.task_id[index]
+                            taskDiv.classList.add('task', task_id);
+
+                            // チェックボックス作成
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.disabled = 'disabled'
+                            checkbox.name = 'task';
+                            checkbox.id = task_id;
+
+                            // ラベル作成
+                            const label = document.createElement('label');
+                            label.htmlFor = task_id; // チェックボックスと関連付け
+                            label.textContent = task; // タスク内容をラベルに設定
+
+                            // div.task にチェックボックスとラベルを追加
+                            taskDiv.appendChild(checkbox);
+                            taskDiv.appendChild(label);
+
+                            // taskBox に taskDiv を追加
+                            taskBox.appendChild(taskDiv);
+                        });
+                    }
+                });
+            }
+
+            // データが空の場合のメッセージ表示
+            function displayNoDataMessage() {
+                document.querySelector('.schedule').innerHTML = '<p>No schedule data available.</p>';
+            }
+        };
+
+        window.onload = () => {
+            createScheduleGrid();
+            fetchTodaysTask();
+            fetchNextTask();
+            setInterval(updateCurrentTime, 1000);
+        };
+    </script>
 
 </body>
+
 </html>

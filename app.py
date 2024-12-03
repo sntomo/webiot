@@ -4,11 +4,13 @@ import requests
 import schedule
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, date
 from database import init_db
+from collections import defaultdict
 
 app = Flask(__name__)
 init_db()
+
 
 # 実際の開始日時をタスクに登録
 def update_task_start_time(task_id, actual_start_time):
@@ -18,11 +20,12 @@ def update_task_start_time(task_id, actual_start_time):
     conn.commit()
     conn.close()
 
+
 def insert_task(title, scheduled_time, end_time):
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
     c.execute('INSERT INTO tasks (title, scheduled_time, end_time) VALUES (?, ?, ?)', 
-              (title, scheduled_time, end_time))
+            (title, scheduled_time, end_time))
     conn.commit()
     conn.close()
 
@@ -65,6 +68,28 @@ def get_next_task():
     
     return None  # 未来のタスクがない場合
 
+
+# 岩部追記 一日のタスクをDBから取り出してデータを成形
+def get_todays_task():
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    d = date.today()
+    todays_task = []
+    d_str = d.strftime("%Y-%m-%d")
+    c.execute('SELECT scheduled_time, title, id FROM tasks WHERE scheduled_time LIKE ? ORDER BY scheduled_time ASC ', (d_str+'%',))
+    todays_task_data = [{"time": row[0], "task": row[1], "task_id": row[2]} for row in c.fetchall()]
+    conn.close()
+    # 時間ごとにタスクをまとめる辞書
+    grouped_tasks = defaultdict(list)
+    for record in todays_task_data:
+        time_obj = datetime.fromisoformat(record["time"])  # ISOフォーマットをdatetimeオブジェクトに変換
+        hour_minute = time_obj.strftime("%H:00")  # "HH:MM"形式の文字列に変換
+        grouped_tasks[hour_minute].append({"task": record["task"], "task_id": record["task_id"]})
+    # `task_id` を含めてリストを作成
+    todays_task = [{"time": time, "task": [task["task"] for task in tasks], "task_id": [task["task_id"] for task in tasks]} for time, tasks in grouped_tasks.items()]
+    return todays_task
+
+
 # タスクを終了済みとしてマークする関数
 def mark_task_as_completed(task_id):
     conn = sqlite3.connect('tasks.db')
@@ -76,10 +101,10 @@ def mark_task_as_completed(task_id):
     url = "https://notify-api.line.me/api/notify"
     token = 'YB0NW8ggdR205dV2OskRGHRQBM36CoU8qqy7GPFFvPP'
     headers = {'Authorization': 'Bearer ' + token}
- 
+
     message = 'タスクが完了しました'
     payload = {'message': message}
- 
+
     r = requests.post(url, headers=headers, params=payload,)
     if r.status_code != 200:
         print("error : %d" % (r.status_code))
@@ -101,14 +126,27 @@ def next_task():
     else:
         return jsonify(id=None, title=None, scheduled_time=None, endtime=None)  # タスクがない場合
 
+
+# 岩部追記 fetch用エンドポイント
+@app.route('/todays_task', methods=['POST'])
+def todays_task():
+    todays_task = get_todays_task()
+    if todays_task:
+        return jsonify(todays_task)
+    else:
+        return jsonify({'time':None, 'task':None, 'task_id':None})  # タスクがない場合
+
+
 def get_current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 
 @app.route('/')
 def index():
     next_task = get_next_task()
     current_time = get_current_time()
     return render_template('index.html', next_task=next_task, current_time=current_time)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -124,6 +162,7 @@ def register():
         insert_task(title, scheduled_time, end_time)
         return redirect(url_for('index'))
     return render_template('register.html')
+
 
 # 終了フラグを更新
 @app.route('/mark_task_as_completed', methods=['POST'])
@@ -150,6 +189,7 @@ def update_current_task():
         return jsonify(task)
     else:
         return jsonify({'message': 'No active task'})
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
