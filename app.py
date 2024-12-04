@@ -21,11 +21,11 @@ def update_task_start_time(task_id, actual_start_time):
     conn.close()
 
 
-def insert_task(title, scheduled_time, end_time):
+def insert_task(title, scheduled_time, end_time, comments):
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
-    c.execute('INSERT INTO tasks (title, scheduled_time, end_time) VALUES (?, ?, ?)', 
-            (title, scheduled_time, end_time))
+    c.execute('INSERT INTO tasks (title, scheduled_time, end_time, comments) VALUES (?, ?, ?, ?)', 
+            (title, scheduled_time, end_time, comments))
     conn.commit()
     conn.close()
 
@@ -92,22 +92,76 @@ def get_todays_task():
 
 # タスクを終了済みとしてマークする関数
 def mark_task_as_completed(task_id):
+    # データベース接続を開く
     conn = sqlite3.connect('tasks.db')
     c = conn.cursor()
-    c.execute('UPDATE tasks SET is_completed = 1 WHERE id = ?', (task_id,))
-    conn.commit()
+
+    try:
+        # タスクを完了済みに設定
+        c.execute('UPDATE tasks SET is_completed = 1 WHERE id = ?', (task_id,))
+        conn.commit()
+
+        # タスクの開始時間と終了時間を取得
+        c.execute('SELECT title, scheduled_time, end_time FROM tasks WHERE id = ?', (task_id,))
+        result = c.fetchone()
+        if result:
+            title, start_time, end_time = result
+        else:
+            raise ValueError(f"Task ID {task_id} not found in the database.")
+
+        # 計測率を計算
+        sensor_rate = calculate_sensor_rate(start_time, end_time)
+        threshold = 0.1  # 計測率の閾値（例: 10%）
+
+        # LINE通知
+        url = "https://notify-api.line.me/api/notify"
+        token = 'aFfnFfIIQXtpwgez3ahZLN1lxkXxADdMwJQvecjc7QV'
+        headers = {'Authorization': 'Bearer ' + token}
+
+        if sensor_rate >= threshold:
+            message = f"{title} は予定通りに実行されました！"
+            # 正常実行された場合、キャラクターテーブルのポイントを追加
+            c.execute('UPDATE characters SET points = points + 1')
+            conn.commit()
+        else:
+            message = f"{title} は予定通り実行されませんでした"
+
+        payload = {'message': message}
+        r = requests.post(url, headers=headers, params=payload)
+        if r.status_code != 200:
+            print("LINE通知のエラー:", r.status_code)
+
+    except Exception as e:
+        print(f"Error marking task as completed: {e}")
+
+    finally:
+        # データベース接続を閉じる
+        conn.close()
+
+# 人感センサーでの計測率を取得する
+def calculate_sensor_rate(start_time, end_time):
+    conn = sqlite3.connect('motion_data.db')
+    cursor = conn.cursor()
+    
+    # センサーデータを開始・終了時間の間で取得
+    cursor.execute("""
+        SELECT COUNT(*) FROM motion_log
+        WHERE strftime('%Y-%m-%dT%H:%M', timestamp) BETWEEN ? AND ? AND motion_detected = 1
+    """, (start_time, end_time))
+    motion_count = cursor.fetchone()[0]
+    
+    cursor.execute("""
+        SELECT COUNT(*) FROM motion_log
+        WHERE strftime('%Y-%m-%dT%H:%M', timestamp) BETWEEN ? AND ?
+    """, (start_time, end_time))
+    total_count = cursor.fetchone()[0]
+    
     conn.close()
-
-    url = "https://notify-api.line.me/api/notify"
-    token = 'YB0NW8ggdR205dV2OskRGHRQBM36CoU8qqy7GPFFvPP'
-    headers = {'Authorization': 'Bearer ' + token}
-
-    message = 'タスクが完了しました'
-    payload = {'message': message}
-
-    r = requests.post(url, headers=headers, params=payload,)
-    if r.status_code != 200:
-        print("error : %d" % (r.status_code))
+    
+    # 計測率を計算
+    if total_count == 0:
+        return 0  # データがない場合
+    return motion_count / total_count
 
 
 @app.route('/start_task', methods=['POST'])
@@ -154,12 +208,13 @@ def register():
         title = request.form['title']
         scheduled_time = request.form['scheduled_time']
         end_time = request.form['end_time']
+        comments = request.form['comments']
         
         # Ensure start time is before end time
         if scheduled_time >= end_time:
             return render_template('register.html', error="終了時間は開始時刻より後である必要があります。")
         
-        insert_task(title, scheduled_time, end_time)
+        insert_task(title, scheduled_time, end_time, comments)
         return redirect(url_for('index'))
     return render_template('register.html')
 

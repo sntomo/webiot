@@ -1,8 +1,17 @@
 import sqlite3
 
+# データベースに接続
 conn = sqlite3.connect('tasks.db')
 c = conn.cursor()
-# テーブルに 'actual_start_time' カラムを追加
-c.execute("ALTER TABLE tasks ADD COLUMN actual_start_time TEXT")
+
+# 'characters' テーブルを作成
+c.execute("""
+    CREATE TABLE IF NOT EXISTS characters (
+        points INTEGER DEFAULT 0,
+        type TEXT
+    )
+""")
+
+# 変更を保存して接続を閉じる
 conn.commit()
 conn.close()
