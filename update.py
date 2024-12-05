@@ -1,17 +1,15 @@
 import sqlite3
 
-# データベースに接続
-conn = sqlite3.connect('tasks.db')
-c = conn.cursor()
+def add_subject_column():
+    conn = sqlite3.connect('tasks.db')  # データベース名を確認
+    c = conn.cursor()
+    try:
+        c.execute("ALTER TABLE characters ADD COLUMN lv INTEGER")
+        print("Column 'lv' added successfully.")
+    except sqlite3.OperationalError as e:
+        print(f"Error: {e}")  # カラムが既に存在する場合など
+    finally:
+        conn.commit()
+        conn.close()
 
-# 'characters' テーブルを作成
-c.execute("""
-    CREATE TABLE IF NOT EXISTS characters (
-        points INTEGER DEFAULT 0,
-        type TEXT
-    )
-""")
-
-# 変更を保存して接続を閉じる
-conn.commit()
-conn.close()
+add_subject_column()

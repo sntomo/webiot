@@ -4,6 +4,7 @@ import requests
 import schedule
 import time
 import threading
+import random
 from datetime import datetime, date
 from database import init_db
 from collections import defaultdict
@@ -121,8 +122,7 @@ def mark_task_as_completed(task_id):
         if sensor_rate >= threshold:
             message = f"{title} は予定通りに実行されました！"
             # 正常実行された場合、キャラクターテーブルのポイントを追加
-            c.execute('UPDATE characters SET points = points + 1')
-            conn.commit()
+            update_character()
         else:
             message = f"{title} は予定通り実行されませんでした"
 
@@ -163,6 +163,86 @@ def calculate_sensor_rate(start_time, end_time):
         return 0  # データがない場合
     return motion_count / total_count
 
+# キャラクターのデータを更新する
+def update_character():
+    conn = sqlite3.connect('tasks.db')  # データベース名を確認
+    c = conn.cursor()
+    
+    try:
+        # 現在のポイントを取得
+        c.execute('SELECT points FROM characters')
+        result = c.fetchone()
+        if not result:
+            print(f"Record not found.")
+            return
+        
+        current_points = result[0]
+        
+        # ポイントを1増加
+        new_points = current_points + 1
+        c.execute('UPDATE characters SET points = ?', (new_points,))
+        
+        # ポイントが10になった場合
+        if new_points == 10:
+            new_type = random.randint(1, 3)  # 1～3のランダム値
+            c.execute('UPDATE characters SET type = ?, lv = 1', (new_type,))
+            print(f"Type set to {new_type}, LV set to 1.")
+        
+        # ポイントが20になった場合
+        if new_points == 20:
+            new_subject = random.randint(1, 5)  # 1～5のランダム値
+            c.execute('UPDATE characters SET subject = ?,lv = 2', (new_subject,))
+            print(f"Subject set to {new_subject}.")
+        
+        conn.commit()
+        print(f"Points updated to {new_points}.")
+    
+    except Exception as e:
+        print(f"Error updating character: {e}")
+    
+    finally:
+        conn.close()
+
+# キャラ画像を取得する
+def get_character_image():
+    # データベースからキャラクター情報を取得
+    conn = sqlite3.connect('tasks.db')  # データベースファイル名を指定
+    c = conn.cursor()
+    
+    try:
+        # キャラクター情報を取得
+        c.execute('SELECT lv, type, subject FROM characters')
+        result = c.fetchone()
+        
+        if not result:
+            print("No character data found.")
+            return "default.png"
+        
+        lv, char_type, subject = result
+        
+        # 現在時刻を取得
+        current_hour = datetime.now().hour
+        is_night = current_hour >= 22 or current_hour < 6  # 深夜10時～朝6時
+        
+        # 画像パスを決定
+        if lv == 1:
+            image = "1-s.png" if is_night else "1.png"
+        elif lv == 2:
+            image = f"2-{char_type}-s.png" if is_night else f"2-{char_type}.png"
+        elif lv == 3:
+            random_value = random.randint(1, 3)  # ランダム値
+            image = f"3-{char_type}-{subject}-s.png" if is_night else f"3-{char_type}-{subject}-{random_value}.png"
+        else:
+            image = "default.png"  # デフォルト画像
+        
+        return image
+
+    except Exception as e:
+        print(f"Error fetching character image: {e}")
+        return "default.png"
+
+    finally:
+        conn.close()
 
 @app.route('/start_task', methods=['POST'])
 def start_task():
@@ -199,7 +279,12 @@ def get_current_time():
 def index():
     next_task = get_next_task()
     current_time = get_current_time()
-    return render_template('index.html', next_task=next_task, current_time=current_time)
+    character_image = get_character_image()
+    return render_template('index.html',
+        next_task=next_task,
+        current_time=current_time,
+        character_image=character_image
+    )
 
 
 @app.route('/register', methods=['GET', 'POST'])
