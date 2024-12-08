@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://code.jquery.com/jquery-3.7.1.slim.js"
         integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc=" crossorigin="anonymous"></script>
-    <title>トップページ</title>
+    <title>にゃんコレ！</title>
     <style>
         @font-face {
             font-family: 'digitalism';
@@ -285,6 +285,35 @@
             background-image: url('../static/img/neko/{{character_image}}');
             background-size: 100% 100%;
         }
+
+        /* モーダルの基本スタイル */
+        #modal {
+            display: none;
+            /* 初期状態は非表示 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* 背景の半透明効果 */
+            z-index: 1000;
+        }
+
+        /* モーダルコンテンツのスタイル */
+        #modal-content {
+            position: relative;
+            margin: 15% auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+        }
+
+        #modal button {
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -318,6 +347,7 @@
                 </div>
                 <div class="character"></div>
             </div>
+　　　　　　　<a href="/points"><button class="task-add">ポイント画面</button></a>
         </div>
 
     </div>
@@ -327,11 +357,14 @@
     </div>
 
 
+    <div id="modal">
+        <div id="modal-content">
+            <p id="modal-message"></p>
+            <button onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
 
-    <h1>計測システム</h1>
     <button onclick="startTask()">計測開始</button>
-
-
     <!-- 音声要素の追加 -->
     <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
 
@@ -400,10 +433,10 @@
 
             document.getElementById('now').textContent = currentTime;
 
-console.log(currentTask);
-console.log(currentEndTime);
-console.log(now);
-console.log(currentTaskId);
+            console.log(currentTask);
+            console.log(currentEndTime);
+            console.log(now);
+            console.log(currentTaskId);
 
             // 現在のタスクが終了しているかどうかを確認
             if (currentTask && currentEndTime && now >= currentEndTime) {
@@ -467,9 +500,8 @@ console.log(currentTaskId);
                         ` - 終了時刻: ${currentEndTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })}` :
                         '');
 
-                // アラートと音声を鳴らす
-                document.getElementById('alarm-sound').play();
-                alert(`アラート: ${document.getElementById('next-task-title').textContent} の時間です！`);
+                // アラート処理
+                triggerAlert();
 
                 currentTask = nextTaskTime;
                 currentTaskId = nextTaskId;
@@ -597,6 +629,29 @@ console.log(currentTaskId);
                 document.querySelector('.schedule').innerHTML = '<p>No schedule data available.</p>';
             }
         };
+
+        // モーダルを開く
+        function openModal(message) {
+            const modal = document.getElementById('modal');
+            const modalMessage = document.getElementById('modal-message');
+            modalMessage.textContent = message;
+            modal.style.display = 'block'; // モーダルを表示
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.style.display = 'none'; // モーダルを非表示
+        }
+
+        // アラート処理
+        function triggerAlert() {
+            const alarmSound = document.getElementById('alarm-sound');
+            const taskTitle = document.getElementById('next-task-title').textContent;
+
+            alarmSound.play(); // 音声を再生
+            openModal(`アラート: ${taskTitle} の時間です！`);
+        }
 
         window.onload = () => {
             createScheduleGrid();

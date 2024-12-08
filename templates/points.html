@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポイント確認ページ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+<style>
+.balloon2 {
+  position: relative;
+  display: inline-block;
+  margin: 1.5em 0;
+  padding: 7px 10px;
+  min-width: 120px;
+  max-width: 100%;
+  color: #555;
+  font-size: 16px;
+  background: #FFF;
+  border: solid 1px #f78bbd;
+  box-sizing: border-box;
+  border-radius:15px;
+}
+
+.balloon2:before {
+  content: "";
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  margin-left: -15px;
+  border: 12px solid transparent;
+  border-top: 12px solid #FFF;
+  z-index: 2;
+}
+
+.balloon2:after {
+  content: "";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  margin-left: -17px;
+  border: 14px solid transparent;
+  border-top: 14px solid #f78bbd;
+  z-index: 1;
+}
+
+.balloon2 p {
+  margin: 0;
+  padding: 0;
+}
+</style>
+</head>
+<body class="bg-pink-50 flex justify-center items-center min-h-screen">
+    <div class="bg-white shadow-lg rounded-lg p-6 w-full max-w-4xl flex flex-col">
+        <div class="flex">
+            <!-- Left Section: Character -->
+            <div class="w-1/3 flex flex-col relative">
+                <div class="flex items-left">
+		    <!-- HOMEボタン -->
+		    <a href="/" class="mr-2">
+		        <img src="{{ url_for('static', filename='img/point/home.png') }}" alt="HOME" class="w-12 h-12">
+		    </a>
+		    <!-- キャラクタータイトル -->
+		    <div class="bg-pink-300 text-white text-sm font-bold px-4 py-1 rounded-full shadow">
+		        キャラクター
+		    </div>
+		</div>
+		<div class="balloon2 mr-4">
+		  <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br /><br /><br /></p>
+		</div>
+		<div class="character">
+<img src="{{ url_for('static', filename='/img/neko/'+ character_image) }}" alt="キャラクター"></div>
+            </div>
+
+            <!-- Right Section: Information -->
+            <div class="w-2/3 pl-6 border border-pink-300 rounded-lg p-4">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-pink-600 font-bold text-lg">キャラクター情報</h1>
+                    <div class="bg-pink-300 text-white text-xs px-3 py-1 rounded-md cursor-pointer">
+                        編集
+                    </div>
+                </div>
+
+                <!-- Level Information -->
+                <div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700 font-bold">今のレベル</span>
+                        <span class="text-pink-600 font-bold text-xl">{{ user.level }} </span>
+                    </div>
+                    <div class="relative w-full h-4 bg-pink-100 rounded-full mt-2">
+                        <div class="absolute h-full bg-pink-400 rounded-full" style="width: 50%;"></div>
+                    </div>
+                    <div class="text-right text-xs text-gray-600 mt-1">あと ○○PT</div>
+                </div>
+
+                <!-- Current State -->
+                <div class="mt-4">
+                    <span class="text-gray-700 font-bold">今の状態:</span>
+                    <span class="text-sm text-gray-600 font-semibold">疲れ気味</span>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-6 grid grid-cols-4 gap-4">
+                    <div class="flex flex-col items-center">
+                        <div class="bg-pink-100 w-12 h-12 flex items-center justify-center rounded-full">
+                            <img src="{{ url_for('static', filename='img/point/change.png') }}" alt="きせかえ" />
+                        </div>
+                        <span class="text-sm text-gray-600 mt-1">きせかえ</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-pink-100 w-12 h-12 flex items-center justify-center rounded-full">
+                            <img src="{{ url_for('static', filename='img/point/mail.png') }}" alt="メール">
+                        </div>
+                        <span class="text-sm text-gray-600 mt-1">メール</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-pink-100 w-12 h-12 flex items-center justify-center rounded-full">
+                            <img src="{{ url_for('static', filename='img/point/album.png') }}" alt="アルバム">
+                        </div>
+                        <span class="text-sm text-gray-600 mt-1">アルバム</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-pink-100 w-12 h-12 flex items-center justify-center rounded-full">
+                            <img src="{{ url_for('static', filename='img/point/zukan.png') }}" alt="図鑑">
+                        </div>
+                        <span class="text-sm text-gray-600 mt-1">図鑑</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Section: Daily Stats -->
+        <div class="flex mt-6 space-x-4">
+            <div class="flex-1 bg-pink-100 rounded-md px-4 py-2 text-gray-700 flex justify-between items-center">
+                <span>連続達成日数</span>
+                <span class="font-bold text-pink-600">20日</span>
+            </div>
+            <div class="flex-1 bg-white border border-pink-300 rounded-md px-4 py-2 flex justify-between items-center">
+                <span>次やること</span>
+                <span class="font-bold text-gray-700">
+{% if next_task %}
+    {{ user.next_task_time }} {{ user.next_task_title }} 
+{% else %}
+    次のタスクはありません。
+{% endif %}
+</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -303,6 +303,55 @@ def register():
         return redirect(url_for('index'))
     return render_template('register.html')
 
+@app.route('/points', methods=['GET'])
+def points():
+    next_task = get_next_task()
+    if next_task:
+        next_task_time = datetime.strptime(next_task[1], "%Y-%m-%dT%H:%M")
+        next_task_time = next_task_time.strftime("%H:%M")
+        next_task_title = next_task[0]
+    else:
+        next_task_time = ""
+        next_task_title = ""
+
+    # キャラクター情報を取得
+    # データベースからキャラクター情報を取得
+    conn = sqlite3.connect('tasks.db')  # データベースファイル名を指定
+    c = conn.cursor()
+    
+    try:
+
+        c.execute('SELECT lv, type, subject FROM characters')
+        result = c.fetchone()
+        
+        if not result:
+            print("No character data found.")
+        
+        lv, char_type, subject = result
+    
+    except Exception as e:
+        print(f"Error fetching character image: {e}")
+        return "default.png"
+
+    finally:
+        conn.close()
+
+    # サンプルデータ
+    user_data = {
+        "username": "サンプルユーザー",
+        "level": lv,
+        "points_to_next_level": 50,
+        "status": "疲れ気味",
+        "consecutive_days": 20,
+        "next_task_time": next_task_time,
+        "next_task_title": next_task_title
+    }
+    
+    character_image = get_character_image()
+    return render_template('points.html',
+        user=user_data,
+        character_image=character_image,
+    )
 
 # 終了フラグを更新
 @app.route('/mark_task_as_completed', methods=['POST'])
