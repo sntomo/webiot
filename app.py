@@ -116,7 +116,7 @@ def mark_task_as_completed(task_id):
 
         # LINE通知
         url = "https://notify-api.line.me/api/notify"
-        token = 'aFfnFfIIQXtpwgez3ahZLN1lxkXxADdMwJQvecjc7QV'
+        token = 'd7aanCenDh03Z8brVpHMFca9AJrsw6fWykSwrQQ5pH8'
         headers = {'Authorization': 'Bearer ' + token}
 
         if sensor_rate >= threshold:
@@ -277,9 +277,22 @@ def get_current_time():
 
 @app.route('/')
 def index():
+
+    lv = request.args.get("lv", "")
+    type = request.args.get("type", "")
+    sub = request.args.get("sub","")
+
+    if lv:
+        conn = sqlite3.connect('tasks.db')  # データベース名を確認
+        c = conn.cursor()
+        c.execute('UPDATE characters SET type = ?, lv = ?, subject = ?',(type, lv, sub))
+        conn.commit()
+        conn.close()
+
     next_task = get_next_task()
     current_time = get_current_time()
     character_image = get_character_image()
+
     return render_template('index.html',
         next_task=next_task,
         current_time=current_time,
